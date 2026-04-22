@@ -1,0 +1,85 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <tab id="bodylanguage" translate="label" sortOrder="450">
+            <label>Bodylanguage</label>
+        </tab>
+        <section id="bodylanguage_customoptionswatches"
+                 translate="label"
+                 type="text"
+                 sortOrder="10"
+                 showInDefault="1"
+                 showInWebsite="1"
+                 showInStore="1">
+            <label>Custom Option Swatches</label>
+            <tab>bodylanguage</tab>
+            <resource>Bodylanguage_CustomOptionSwatches::config_custom_option_swatches</resource>
+            <group id="general"
+                   translate="label"
+                   type="text"
+                   sortOrder="10"
+                   showInDefault="1"
+                   showInWebsite="1"
+                   showInStore="1">
+                <label>General Settings</label>
+                <field id="enabled"
+                       translate="label"
+                       type="select"
+                       sortOrder="10"
+                       showInDefault="1"
+                       showInWebsite="1"
+                       showInStore="1">
+                    <label>Enable Module</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="swatch_size"
+                       translate="label comment"
+                       type="text"
+                       sortOrder="20"
+                       showInDefault="1"
+                       showInWebsite="1"
+                       showInStore="1">
+                    <label>Swatch Size</label>
+                    <comment>Pixel size for the swatch box. Default is 60.</comment>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                </field>
+                <field id="fallback_color"
+                       translate="label comment"
+                       type="text"
+                       sortOrder="30"
+                       showInDefault="1"
+                       showInWebsite="1"
+                       showInStore="1">
+                    <label>Fallback Color</label>
+                    <comment>Used when no exact or partial mapping matches an option value.</comment>
+                    <frontend_model>Bodylanguage\CustomOptionSwatches\Block\Adminhtml\System\Config\Form\Field\ColorPicker</frontend_model>
+                </field>
+                <field id="color_mappings"
+                       type="text"
+                       translate="label comment"
+                       sortOrder="40"
+                       showInDefault="1"
+                       showInWebsite="1"
+                       showInStore="1">
+                    <label>Solid Color Mappings</label>
+                    <comment>Map normalized option labels such as "baby pink" or "royal blue" to solid hex colors.</comment>
+                    <frontend_model>Bodylanguage\CustomOptionSwatches\Block\Adminhtml\System\Config\Form\Field\ColorMappings</frontend_model>
+                    <backend_model>Bodylanguage\CustomOptionSwatches\Model\Config\Backend\ColorMappings</backend_model>
+                </field>
+                <field id="pattern_mappings"
+                       type="text"
+                       translate="label comment"
+                       sortOrder="50"
+                       showInDefault="1"
+                       showInWebsite="1"
+                       showInStore="1">
+                    <label>Pattern Mappings</label>
+                    <comment>Map normalized option labels such as "zebra" or "leopard/black" to a pattern swatch.</comment>
+                    <frontend_model>Bodylanguage\CustomOptionSwatches\Block\Adminhtml\System\Config\Form\Field\PatternMappings</frontend_model>
+                    <backend_model>Bodylanguage\CustomOptionSwatches\Model\Config\Backend\PatternMappings</backend_model>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>

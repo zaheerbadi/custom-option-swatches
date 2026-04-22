@@ -1,0 +1,107 @@
+<?php
+/**
+ * Product options template with swatch support
+ */
+?>
+<?php
+/**
+ * @var \Magento\Catalog\Block\Product\View\Options $block
+ */
+$product = $block->getProduct();
+$options = $product->getOptions();
+$swatchData = $block->getData('swatch_data') ?: [];
+?>
+
+<div class="product-options-wrapper">
+    <?php foreach ($options as $option): ?>
+        <?php
+        $type = $option->getType();
+        $name = 'options[' . $option->getId() . ']';
+        ?>
+        <div class="field" id="options-<?php echo $option->getId(); ?>">
+            <?php if ($option->getTitle()): ?>
+                <label for="select_<?php echo $option->getId(); ?>" class="label">
+                    <span><?php echo $this->escapeHtml($option->getTitle()); ?></span>
+                    <?php if ($option->getIsRequire()): ?>
+                        <span class="required">*</span>
+                    <?php endif; ?>
+                </label>
+            <?php endif; ?>
+
+            <?php if ($type === 'drop_down'): ?>
+                <select name="<?php echo $name; ?>" id="select_<?php echo $option->getId(); ?>" class="product-custom-option select-option">
+                    <option value=""><?php echo __('-- Please Select --'); ?></option>
+                    <?php foreach ($option->getValues() as $value): ?>
+                        <option value="<?php echo $value->getId(); ?>">
+                            <?php echo $this->escapeHtml($value->getTitle()); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+
+                <?php if (isset($swatchData[$option->getId()])): ?>
+                    <div class="swatch-container" data-option-id="<?php echo $option->getId(); ?>">
+                        <?php foreach ($swatchData[$option->getId()] as $swatch): ?>
+                            <span class="swatch" 
+                                  data-value-id="<?php echo $swatch['id']; ?>"
+                                  data-label="<?php echo $this->escapeHtmlAttr($swatch['label']); ?>"
+                                  style="background-color: <?php echo $this->escapeHtmlAttr($swatch['color']); ?>;"
+                                  title="<?php echo $this->escapeHtmlAttr($swatch['label']); ?>">
+                            </span>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            <?php elseif ($type === 'text'): ?>
+                <input type="text" name="<?php echo $name; ?>" class="product-custom-option" id="options_<?php echo $option->getId(); ?>" />
+            <?php elseif ($type === 'area'): ?>
+                <textarea name="<?php echo $name; ?>" class="product-custom-option" id="options_<?php echo $option->getId(); ?>"></textarea>
+            <?php elseif ($type === 'file'): ?>
+                <input type="file" name="<?php echo $name; ?>" class="product-custom-option" id="options_<?php echo $option->getId(); ?>" />
+            <?php elseif ($type === 'date'): ?>
+                <input type="date" name="<?php echo $name; ?>" class="product-custom-option" id="options_<?php echo $option->getId(); ?>" />
+            <?php elseif ($type === 'date_time'): ?>
+                <input type="datetime-local" name="<?php echo $name; ?>" class="product-custom-option" id="options_<?php echo $option->getId(); ?>" />
+            <?php elseif ($type === 'time'): ?>
+                <input type="time" name="<?php echo $name; ?>" class="product-custom-option" id="options_<?php echo $option->getId(); ?>" />
+            <?php elseif ($type === 'radio'): ?>
+                <div class="radio-option-wrapper">
+                    <?php foreach ($option->getValues() as $value): ?>
+                        <label class="radio-label">
+                            <input type="radio" name="<?php echo $name; ?>" value="<?php echo $value->getId(); ?>" class="radio-option" />
+                            <span><?php echo $this->escapeHtml($value->getTitle()); ?></span>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
+            <?php elseif ($type === 'checkbox'): ?>
+                <div class="checkbox-option-wrapper">
+                    <?php foreach ($option->getValues() as $value): ?>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="<?php echo $name; ?>" value="<?php echo $value->getId(); ?>" class="checkbox-option" />
+                            <span><?php echo $this->escapeHtml($value->getTitle()); ?></span>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
+            <?php elseif ($type === 'multiple'): ?>
+                <select name="<?php echo $name; ?>[]" multiple="multiple" class="product-custom-option select-option">
+                    <?php foreach ($option->getValues() as $value): ?>
+                        <option value="<?php echo $value->getId(); ?>">
+                            <?php echo $this->escapeHtml($value->getTitle()); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            <?php endif; ?>
+        </div>
+    <?php endforeach; ?>
+</div>
+
+<?php
+$swatchConfig = json_encode($swatchData);
+?>
+<script type="text/x-magento-init">
+{
+    "[data-role=swatch-container]": {
+        "Bodylanguage_CustomOptionSwatches/js/product-swatch": {
+            "swatchConfig": <?php echo $swatchConfig; ?>
+        }
+    }
+}
+</script>
