@@ -1,4 +1,4 @@
-# Vendor CustomOptionSwatches Module
+# Bodylanguage CustomOptionSwatches Module
 
 ## Overview
 This Magento 2 module converts simple product custom option dropdown values into clickable color swatches on the product page. The original select element is preserved for submission and validation while displaying an attractive swatch UI below it.
@@ -15,15 +15,15 @@ This Magento 2 module converts simple product custom option dropdown values into
 ## Installation
 
 ### 1. Copy Module Files
-Copy the `Vendor/CustomOptionSwatches` directory to:
+Copy the `Bodylanguage/CustomOptionSwatches` directory to:
 ```
-app/code/Vendor/CustomOptionSwatches/
+app/code/Bodylanguage/CustomOptionSwatches/
 ```
 
 ### 2. Enable Module
 ```bash
 php bin/magento setup:upgrade
-php bin/magento module:enable Vendor_CustomOptionSwatches
+php bin/magento module:enable Bodylanguage_CustomOptionSwatches
 ```
 
 ### 3. Compile and Deploy Static Files
@@ -83,7 +83,7 @@ You can use hex color codes directly as option values:
 ## File Structure
 
 ```
-Vendor/CustomOptionSwatches/
+Bodylanguage/CustomOptionSwatches/
 ├── registration.php                                    # Module registration
 ├── etc/
 │   ├── module.xml                                      # Module configuration
@@ -147,7 +147,7 @@ The LESS file (`view/frontend/web/css/product-swatch.less`) contains:
 ### Custom Styles
 To override styles, create a custom theme and include:
 ```less
-@import 'Vendor_CustomOptionSwatches::css/product-swatch';
+@import 'Bodylanguage_CustomOptionSwatches::css/product-swatch';
 ```
 
 ## JavaScript
@@ -158,7 +158,7 @@ The JavaScript component uses x-magento-init for initialization:
 <script type="text/x-magento-init">
 {
     "[data-role=swatch-container]": {
-        "Vendor_CustomOptionSwatches/js/product-swatch": {
+        "Bodylanguage_CustomOptionSwatches/js/product-swatch": {
             "swatchConfig": <?php echo $swatchConfig; ?>
         }
     }
@@ -180,7 +180,7 @@ The JavaScript component uses x-magento-init for initialization:
 4. Run `php bin/magento setup:static-content:deploy`
 
 ### Module Not Recognized
-1. Verify file is in correct location: `app/code/Vendor/CustomOptionSwatches/`
+1. Verify file is in correct location: `app/code/Bodylanguage/CustomOptionSwatches/`
 2. Run `php bin/magento setup:upgrade`
 3. Check `var/log/system.log` for errors
 
@@ -191,9 +191,9 @@ The JavaScript component uses x-magento-init for initialization:
 
 ## Deployment Checklist
 
-- [ ] Copy module to `app/code/Vendor/CustomOptionSwatches/`
+- [ ] Copy module to `app/code/Bodylanguage/CustomOptionSwatches/`
 - [ ] Run `php bin/magento setup:upgrade`
-- [ ] Run `php bin/magento module:enable Vendor_CustomOptionSwatches`
+- [ ] Run `php bin/magento module:enable Bodylanguage_CustomOptionSwatches`
 - [ ] Run `php bin/magento setup:di:compile`
 - [ ] Run `php bin/magento setup:static-content:deploy`
 - [ ] Run `php bin/magento cache:clean`
@@ -219,6 +219,8 @@ Extend `SwatchConfig::getColorForValue()` to implement custom color resolution l
 ### Template Customization
 Create a theme override for `templates/product/view/options.phtml` to customize rendering.
 
+## License
+All code in this module is proprietary and intended for use by Body Language Fashions.
 
 ## Support
 For issues or questions, contact the development team.

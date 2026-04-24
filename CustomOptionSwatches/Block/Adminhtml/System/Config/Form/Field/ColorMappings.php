@@ -24,8 +24,58 @@ class ColorMappings extends AbstractFieldArray
                 'class' => 'required-entry',
             ]
         );
+        $this->addColumn(
+            'image',
+            [
+                'label' => __('Swatch Image'),
+            ]
+        );
         $this->_addAfter = false;
         $this->_addButtonLabel = __('Add Color Mapping');
+    }
+
+    /**
+     * Override to ensure row ids are valid HTML id selectors (do not start with a digit).
+     * Prefix numeric or digit-leading ids with an underscore so template selectors like
+     * "tr#<%- _id %> button.action-delete" remain valid for querySelectorAll.
+     *
+     * @return array
+     */
+    public function getArrayRows()
+    {
+        $rows = parent::getArrayRows();
+        $fixed = [];
+
+        foreach ($rows as $rowId => $row) {
+            $currentId = (string) $row->getData('_id');
+            if ($currentId === '') {
+                $fixed[$rowId] = $row;
+                continue;
+            }
+
+            // If id starts with a digit, prefix with underscore
+            if (preg_match('/^[0-9]/', $currentId)) {
+                $newId = '_' . $currentId;
+
+                $rowData = $row->getData();
+                $columnValues = $rowData['column_values'] ?? [];
+                $newColumnValues = [];
+
+                foreach ($columnValues as $key => $val) {
+                    $newKey = preg_replace('/^' . preg_quote($currentId, '/') . '_/', $newId . '_', $key, 1);
+                    $newColumnValues[$newKey] = $val;
+                }
+
+                $rowData['column_values'] = $newColumnValues;
+                $rowData['_id'] = $newId;
+
+                $fixed[$newId] = new \Magento\Framework\DataObject($rowData);
+            } else {
+                $fixed[$currentId] = $row;
+            }
+        }
+
+        return $fixed;
     }
 
     /**
@@ -43,6 +93,39 @@ class ColorMappings extends AbstractFieldArray
                 . ' class="required-entry input-text admin__control-text"'
                 . ' pattern="^#[0-9A-Fa-f]{6}$"'
                 . ' />';
+        }
+
+        if ($columnName === 'image') {
+            $inputName = $this->_getCellInputElementName($columnName);
+            $fileInputName = $inputName . '[file]';
+            $valueInputName = $inputName . '[value]';
+            // Compute media base URL for preview images
+            $mediaBase = '';
+            try {
+                $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+                $storeManager = $objectManager->get(\Magento\Store\Model\StoreManagerInterface::class);
+                $mediaBase = rtrim($storeManager->getStore()->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_MEDIA), '/');
+            } catch (\Throwable $e) {
+                $mediaBase = '';
+            }
+
+            $hiddenId = $this->_getCellInputElementId('<%- _id %>', $columnName);
+            $previewId = $hiddenId . '_preview';
+
+            // The FieldArray script will populate the hidden input value after inserting rows.
+            // Include an <img> that will be updated to show the uploaded image when present.
+            $html = '<div>';
+            $html .= '<input type="file" id="' . $this->_getCellInputElementId('<%- _id %>', $columnName) . '_file" name="' . $fileInputName . '" class="input-file admin__control-file" />';
+            $html .= '<input type="hidden" id="' . $hiddenId . '" name="' . $valueInputName . '" value="" />';
+            $html .= '<img id="' . $previewId . '" src="" data-media-base="' . $this->escapeHtmlAttr($mediaBase) . '" style="max-width:80px; display:none; margin-top:8px; border:1px solid #e5e7eb;" onerror="this.style.display=\'none\'" />';
+            $html .= '<span class="note" style="display:block; font-size: 11px; color: #6b7280;">' . __('Optional, uploads are stored in pub/media/bodylanguage/customoption_images') . '</span>';
+
+            // Inline script: update preview after FieldArray sets input values. Uses a short timeout to allow population.
+            $script = '<script>(function(){try{var hid=document.getElementById("' . $hiddenId . '");var img=document.getElementById("' . $previewId . '");if(!hid||!img) return; function update(){var v=hid.value||""; if(!v){img.style.display="none"; img.src=""; return;} var base=img.getAttribute("data-media-base")||""; img.src = (base?base+"/":"") + v; img.style.display="block";} setTimeout(update,50); if(hid.addEventListener){hid.addEventListener("change",update);} else {hid.attachEvent&&hid.attachEvent("onchange",update);} }catch(e){} })();</script>';
+
+            $html .= $script . '</div>';
+
+            return $html;
         }
 
         return parent::renderCellTemplate($columnName);

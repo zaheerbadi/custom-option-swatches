@@ -10,7 +10,9 @@ $_option = $block->getOption();
 $isRequired = (bool) $_option->getIsRequire();
 $isDropdown = $_option->getType() === ProductCustomOptionInterface::OPTION_TYPE_DROP_DOWN;
 $swatchData = $isDropdown ? (array) $block->getData('swatch_data') : [];
-$hasSwatches = !empty($swatchData);
+$normalizedTitle = strtolower(trim((string) $_option->getTitle()));
+$isColorTitle = $normalizedTitle === 'color' || $normalizedTitle === 'colors' || strpos($normalizedTitle, 'color') !== false;
+$hasSwatches = $isDropdown && $isColorTitle && !empty($swatchData);
 $fieldClass = $isRequired ? ' required' : '';
 $selectClass = $hasSwatches ? ' swatch-source-select' : '';
 $swatchSize = (int) $block->getData('swatch_size') ?: 60;
@@ -131,6 +133,73 @@ $selectId = 'select_' . $_option->getId();
                 });
 
                 setActiveState($select.val() ? String($select.val()) : '');
+
+                // Mirror Magento validation error messages below the swatch container
+                (function () {
+                    var $fieldContainer = $select.closest('.field');
+                    if (!$fieldContainer.length) {
+                        return;
+                    }
+
+                    function mirrorErrors() {
+                        try {
+                            // Ensure a single error target exists below the swatch container
+                            var $errorTarget = $container.next('.swatch-error-target');
+                            if (!$errorTarget.length) {
+                                $errorTarget = $('<div/>').addClass('mage-error swatch-error-target').attr('aria-hidden', 'false');
+                                $container.after($errorTarget);
+                            }
+
+                            // Find Magento-produced error(s) for the original field (exclude our target)
+                            var $errors = $fieldContainer.find('.mage-error').not('.swatch-error-target');
+
+                            if (!$errors.length) {
+                                $errorTarget.hide();
+                                return;
+                            }
+
+                            // Extract only validation text from each error (strip selects/options)
+                            var messages = [];
+                            $errors.each(function () {
+                                var $clone = $(this).clone();
+                                // Remove any form controls or option tags that may have been included
+                                $clone.find('select, option, input, textarea').remove();
+                                var text = $.trim($clone.text());
+                                if (text) {
+                                    messages.push(text);
+                                }
+                            });
+
+                            var html = messages.join('<br>');
+
+                            // Only update if content changed to avoid repeated DOM writes
+                            if ($errorTarget.html() !== html) {
+                                $errorTarget.html(html).show();
+                            }
+                        } catch (e) {
+                            // swallow to avoid breaking add-to-cart
+                        }
+                    }
+
+                    // Observe changes in case Magento validation inserts errors dynamically
+                    try {
+                        var observer = new MutationObserver(function () {
+                            mirrorErrors();
+                        });
+                        observer.observe($fieldContainer[0], { childList: true, subtree: true });
+                    } catch (e) {
+                        // Fallback: attempt a mirror on submit
+                        var $form = $select.closest('form');
+                        if ($form.length) {
+                            $form.on('submit', function () {
+                                setTimeout(mirrorErrors, 1);
+                            });
+                        }
+                    }
+
+                    // Mirror any existing errors on init
+                    mirrorErrors();
+                })();
             });
             </script>
         <?php else : ?>

@@ -3,6 +3,7 @@ namespace Bodylanguage\CustomOptionSwatches\Model;
 
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Model\ScopeInterface;
+use Magento\Store\Model\StoreManagerInterface;
 
 class SwatchConfig
 {
@@ -178,16 +179,23 @@ class SwatchConfig
     private $scopeConfig;
 
     /**
+     * @var StoreManagerInterface
+     */
+    private $storeManager;
+
+    /**
      * @var array
      */
     private $resolvedCache = [];
 
     /**
      * @param ScopeConfigInterface $scopeConfig
+     * @param StoreManagerInterface $storeManager
      */
-    public function __construct(ScopeConfigInterface $scopeConfig)
+    public function __construct(ScopeConfigInterface $scopeConfig, StoreManagerInterface $storeManager)
     {
         $this->scopeConfig = $scopeConfig;
+        $this->storeManager = $storeManager;
     }
 
     /**
@@ -267,6 +275,10 @@ class SwatchConfig
             return $this->buildPatternSwatch($resolved['pattern_exact'][$normalized], $label, $normalized);
         }
 
+        if (isset($resolved['image_exact'][$normalized])) {
+            return $this->buildImageSwatch($resolved['image_exact'][$normalized], $label, $normalized);
+        }
+
         if (isset($resolved['color_exact'][$normalized])) {
             return $this->buildColorSwatch($resolved['color_exact'][$normalized], $label, $normalized);
         }
@@ -274,6 +286,10 @@ class SwatchConfig
         foreach ($this->getCandidates($normalized) as $candidate) {
             if (isset($resolved['pattern_exact'][$candidate])) {
                 return $this->buildPatternSwatch($resolved['pattern_exact'][$candidate], $label, $normalized);
+            }
+
+            if (isset($resolved['image_exact'][$candidate])) {
+                return $this->buildImageSwatch($resolved['image_exact'][$candidate], $label, $normalized);
             }
 
             if (isset($resolved['color_exact'][$candidate])) {
@@ -286,6 +302,11 @@ class SwatchConfig
             return $this->buildPatternSwatch($pattern, $label, $normalized);
         }
 
+        $image = $this->matchByKeyword($normalized, $resolved['image_keywords']);
+        if ($image !== null) {
+            return $this->buildImageSwatch($image, $label, $normalized);
+        }
+
         $color = $this->matchByKeyword($normalized, $resolved['color_keywords']);
         if ($color !== null) {
             return $this->buildColorSwatch($color, $label, $normalized);
@@ -295,6 +316,11 @@ class SwatchConfig
             $pattern = $this->matchByKeyword($candidate, $resolved['pattern_keywords']);
             if ($pattern !== null) {
                 return $this->buildPatternSwatch($pattern, $label, $normalized);
+            }
+
+            $image = $this->matchByKeyword($candidate, $resolved['image_keywords']);
+            if ($image !== null) {
+                return $this->buildImageSwatch($image, $label, $normalized);
             }
 
             $color = $this->matchByKeyword($candidate, $resolved['color_keywords']);
@@ -346,11 +372,21 @@ class SwatchConfig
             $patternExact[$this->normalizeLabel($label)] = $pattern;
         }
 
+        $imageExact = [];
         foreach ($this->getAdminRows(self::XML_PATH_COLOR_MAPPINGS, $storeId) as $row) {
             $label = $this->normalizeLabel($row['option_label'] ?? '');
             $color = strtoupper(trim((string) ($row['color'] ?? '')));
+            $image = trim((string) ($row['image'] ?? ''));
+
             if ($label !== '' && $this->isHexColor($color)) {
                 $colorExact[$label] = $color;
+            }
+
+            if ($label !== '' && $image !== '') {
+                $imageExact[$label] = [
+                    'image' => $image,
+                    'color' => $this->isHexColor($color) ? $color : $this->getFallbackColor($storeId),
+                ];
             }
         }
 
@@ -364,12 +400,17 @@ class SwatchConfig
 
         $colorKeywords = $this->sortKeywords($colorExact);
         $patternKeywords = $this->sortKeywords(array_merge(self::PATTERN_KEYWORDS, $patternExact));
+        $imageKeywords = $imageExact
+            ? $this->sortKeywords(array_combine(array_keys($imageExact), array_column($imageExact, 'image')))
+            : [];
 
         $this->resolvedCache[$cacheKey] = [
             'color_exact' => $colorExact,
             'pattern_exact' => $patternExact,
+            'image_exact' => $imageExact,
             'color_keywords' => $colorKeywords,
             'pattern_keywords' => $patternKeywords,
+            'image_keywords' => $imageKeywords,
         ];
 
         return $this->resolvedCache[$cacheKey];
@@ -506,6 +547,58 @@ class SwatchConfig
             'label' => $label,
             'normalized_label' => $normalized,
         ];
+    }
+
+    /**
+     * @param array|string $imageMap
+     * @param string $label
+     * @param string $normalized
+     * @return array
+     */
+    private function buildImageSwatch($imageMap, $label, $normalized)
+    {
+        if (is_array($imageMap)) {
+            $image = (string) ($imageMap['image'] ?? '');
+            $fallbackColor = (string) ($imageMap['color'] ?? $this->getFallbackColor());
+        } else {
+            $image = (string) $imageMap;
+            $fallbackColor = $this->getFallbackColor();
+        }
+
+        $imageUrl = $this->getImageUrl($image);
+        $style = 'background-color: ' . strtoupper($fallbackColor) . ';'
+            . ' background-image: url(' . $imageUrl . ');'
+            . ' background-size: cover; background-position: center; background-repeat: no-repeat;';
+
+        return [
+            'type' => 'image',
+            'value' => $image,
+            'css_class' => 'custom-swatch-image',
+            'style' => $style,
+            'label' => $label,
+            'normalized_label' => $normalized,
+        ];
+    }
+
+    /**
+     * @param string $image
+     * @return string
+     */
+    private function getImageUrl($image)
+    {
+        $image = trim((string) $image);
+        if ($image === '') {
+            return '';
+        }
+
+        if (preg_match('#^(https?:)?//#i', $image)) {
+            return $image;
+        }
+
+        $image = ltrim($image, '/');
+        $baseUrl = $this->storeManager->getStore()->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_MEDIA);
+
+        return rtrim($baseUrl, '/') . '/' . $image;
     }
 
     /**

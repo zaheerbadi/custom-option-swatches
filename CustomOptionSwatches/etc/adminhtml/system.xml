@@ -63,7 +63,7 @@
                        showInWebsite="1"
                        showInStore="1">
                     <label>Solid Color Mappings</label>
-                    <comment>Map normalized option labels such as "baby pink" or "royal blue" to solid hex colors.</comment>
+                    <comment>Map normalized option labels such as "baby pink" or "royal blue" to solid hex colors and optionally upload a swatch image for the mapping.</comment>
                     <frontend_model>Bodylanguage\CustomOptionSwatches\Block\Adminhtml\System\Config\Form\Field\ColorMappings</frontend_model>
                     <backend_model>Bodylanguage\CustomOptionSwatches\Model\Config\Backend\ColorMappings</backend_model>
                 </field>

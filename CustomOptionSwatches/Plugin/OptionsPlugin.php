@@ -35,12 +35,31 @@ class OptionsPlugin
         if (!$option
             || !$config->isEnabled()
             || $option->getType() !== ProductCustomOptionInterface::OPTION_TYPE_DROP_DOWN
-            || !$config->canRenderOptionTitle($option->getTitle())
         ) {
             return;
         }
 
+        // Build candidate swatch data from option values
         $swatchData = $this->buildSwatchData($option, $config);
+
+        // Determine whether this option should render as swatches.
+        // Use title hint when present; otherwise require at least 75% of values to resolve to swatch types.
+        $total = count($swatchData);
+        $swatchCount = 0;
+        foreach ($swatchData as $d) {
+            if (isset($d['type']) && in_array($d['type'], ['color', 'pattern', 'image'], true)) {
+                $swatchCount++;
+            }
+        }
+
+        // Only apply swatches when the option title explicitly indicates a color.
+        // This prevents non-color dropdowns (e.g., Size) from being rendered as swatches.
+        $useTitleHint = $config->canRenderOptionTitle($option->getTitle());
+        $useSwatches = ($useTitleHint && $swatchCount > 0);
+
+        if (!$useSwatches) {
+            return;
+        }
 
         $subject->setData('swatch_data', $swatchData);
         $subject->setData('swatch_size', $config->getSwatchSize());
