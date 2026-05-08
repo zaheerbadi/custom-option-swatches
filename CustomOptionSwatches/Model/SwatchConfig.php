@@ -12,6 +12,7 @@ class SwatchConfig
     public const XML_PATH_FALLBACK_COLOR = 'bodylanguage_customoptionswatches/general/fallback_color';
     public const XML_PATH_COLOR_MAPPINGS = 'bodylanguage_customoptionswatches/general/color_mappings';
     public const XML_PATH_PATTERN_MAPPINGS = 'bodylanguage_customoptionswatches/general/pattern_mappings';
+    public const XML_PATH_SWATCH_OPTION_LABELS = 'bodylanguage_customoptionswatches/general/swatch_option_labels';
 
     private const DEFAULT_SWATCH_SIZE = 60;
     private const DEFAULT_FALLBACK_COLOR = '#C7CED6';
@@ -19,7 +20,7 @@ class SwatchConfig
     /**
      * @var string[]
      */
-    private const SWATCH_OPTION_TITLES = [
+    private const DEFAULT_SWATCH_OPTION_LABELS = [
         'color',
         'colors',
     ];
@@ -238,6 +239,30 @@ class SwatchConfig
     }
 
     /**
+     * @param int|string|null $storeId
+     * @return array
+     */
+    public function getSwatchOptionLabels($storeId = null)
+    {
+        $value = (string) $this->scopeConfig->getValue(
+            self::XML_PATH_SWATCH_OPTION_LABELS,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+
+        if ($value === '') {
+            return self::DEFAULT_SWATCH_OPTION_LABELS;
+        }
+
+        $labels = preg_split('/[\r\n,]+/', $value);
+        $labels = array_map('trim', $labels);
+        $labels = array_filter($labels, static function ($row) {
+            return trim((string) $row) !== '';
+        });
+        return array_map([$this, 'normalizeLabel'], $labels);
+    }
+
+    /**
      * @param string $title
      * @return bool
      */
@@ -249,7 +274,40 @@ class SwatchConfig
             return false;
         }
 
-        return in_array($normalized, self::SWATCH_OPTION_TITLES, true) || strpos($normalized, 'color') !== false;
+        // Render size-based option titles as swatches as well.
+        if (strpos($normalized, 'size') !== false) {
+            return true;
+        }
+
+        foreach ($this->getSwatchOptionLabels() as $label) {
+            if ($label !== '' && strpos($normalized, $label) !== false) {
+                return true;
+            }
+        }
+
+        return strpos($normalized, 'color') !== false;
+    }
+
+    /**
+     * @param string $title
+     * @return string|null
+     */
+    public function getSwatchOptionType($title)
+    {
+        $normalized = $this->normalizeLabel($title);
+        $labels = $this->getSwatchOptionLabels();
+
+        foreach ($labels as $label) {
+            if ($label === 'size' && strpos($normalized, 'size') !== false) {
+                return 'size';
+            }
+        }
+
+        if (strpos($normalized, 'size') !== false) {
+            return 'size';
+        }
+
+        return 'color';
     }
 
     /**

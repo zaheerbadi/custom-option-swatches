@@ -32,10 +32,15 @@ class OptionsPlugin
         $config = $this->configProvider->getConfig();
         $option = $subject->getOption();
 
-        if (!$option
-            || !$config->isEnabled()
-            || $option->getType() !== ProductCustomOptionInterface::OPTION_TYPE_DROP_DOWN
-        ) {
+        $supportedTypes = [
+            ProductCustomOptionInterface::OPTION_TYPE_DROP_DOWN,
+            ProductCustomOptionInterface::OPTION_TYPE_MULTIPLE,
+        ];
+
+        if (!$option || !$config->isEnabled() || !in_array($option->getType(), $supportedTypes, true)) {
+            // Always clear swatch data to prevent bleed-through from previous options
+            $subject->setData('swatch_data', null);
+            $subject->setData('swatch_type', null);
             return;
         }
 
@@ -43,7 +48,6 @@ class OptionsPlugin
         $swatchData = $this->buildSwatchData($option, $config);
 
         // Determine whether this option should render as swatches.
-        // Use title hint when present; otherwise require at least 75% of values to resolve to swatch types.
         $total = count($swatchData);
         $swatchCount = 0;
         foreach ($swatchData as $d) {
@@ -53,15 +57,18 @@ class OptionsPlugin
         }
 
         // Only apply swatches when the option title explicitly indicates a color.
-        // This prevents non-color dropdowns (e.g., Size) from being rendered as swatches.
         $useTitleHint = $config->canRenderOptionTitle($option->getTitle());
         $useSwatches = ($useTitleHint && $swatchCount > 0);
 
         if (!$useSwatches) {
+            // Clear swatch data to prevent bleed-through from previous options
+            $subject->setData('swatch_data', null);
+            $subject->setData('swatch_type', null);
             return;
         }
 
         $subject->setData('swatch_data', $swatchData);
+        $subject->setData('swatch_type', $config->getSwatchOptionType($option->getTitle()));
         $subject->setData('swatch_size', $config->getSwatchSize());
     }
 

@@ -8,11 +8,15 @@ use Magento\Catalog\Api\Data\ProductCustomOptionInterface;
 
 $_option = $block->getOption();
 $isRequired = (bool) $_option->getIsRequire();
-$isDropdown = $_option->getType() === ProductCustomOptionInterface::OPTION_TYPE_DROP_DOWN;
-$swatchData = $isDropdown ? (array) $block->getData('swatch_data') : [];
-$normalizedTitle = strtolower(trim((string) $_option->getTitle()));
-$isColorTitle = $normalizedTitle === 'color' || $normalizedTitle === 'colors' || strpos($normalizedTitle, 'color') !== false;
-$hasSwatches = $isDropdown && $isColorTitle && !empty($swatchData);
+$isSelectOption = in_array($_option->getType(), [
+    ProductCustomOptionInterface::OPTION_TYPE_DROP_DOWN,
+    ProductCustomOptionInterface::OPTION_TYPE_MULTIPLE,
+], true);
+// Only use swatch data if it's explicitly set for this option AND it contains actual data
+$swatchData = ($isSelectOption && $block->getData('swatch_data')) ? (array) $block->getData('swatch_data') : [];
+$swatchType = $block->getData('swatch_type') ?: 'color';
+// Ensure we have swatches (non-empty data and the swatch type should be set)
+$hasSwatches = !empty($swatchData) && $block->getData('swatch_type') !== null;
 $fieldClass = $isRequired ? ' required' : '';
 $selectClass = $hasSwatches ? ' swatch-source-select' : '';
 $swatchSize = (int) $block->getData('swatch_size') ?: 60;
@@ -32,27 +36,41 @@ $selectId = 'select_' . $_option->getId();
             <div class="custom-option-swatch-container"
                  data-role="swatch-container"
                  data-option-id="<?= $block->escapeHtmlAttr($_option->getId()) ?>"
+                 data-swatch-type="<?= $block->escapeHtmlAttr($swatchType) ?>"
                  style="--custom-option-swatch-size: <?= $block->escapeHtmlAttr($swatchSize) ?>px; display:flex; flex-wrap:wrap; gap:14px; margin-top:14px;">
                 <?php foreach ($swatchData as $swatch) : ?>
-                    <button type="button"
-                            class="color-swatch"
-                            data-value-id="<?= $block->escapeHtmlAttr($swatch['id']) ?>"
-                            data-label="<?= $block->escapeHtmlAttr($swatch['label']) ?>"
-                            title="<?= $block->escapeHtmlAttr($swatch['label']) ?>"
-                            aria-label="<?= $block->escapeHtmlAttr($swatch['label']) ?>"
-                            aria-pressed="false"
-                            style="display:inline-flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:8px; width:<?= $block->escapeHtmlAttr($swatchSize) ?>px; min-width:<?= $block->escapeHtmlAttr($swatchSize) ?>px; padding:0; margin:0; border:0; background:transparent; box-shadow:none; text-align:center;">
-                        <span class="color-swatch-box <?= $block->escapeHtmlAttr($swatch['css_class']) ?>"
-                              data-role="swatch-box"
-                              <?php if (!empty($swatch['style'])) : ?>
-                                  style="<?= $block->escapeHtmlAttr($swatch['style']) ?> width:<?= $block->escapeHtmlAttr($swatchSize) ?>px; height:<?= $block->escapeHtmlAttr($swatchSize) ?>px; display:block; border:2px solid #d1d5db; border-radius:8px; box-shadow:0 6px 16px rgba(15, 23, 42, 0.08); transition:border-color .2s ease, box-shadow .2s ease, transform .2s ease;"
-                              <?php else : ?>
-                                  style="width:<?= $block->escapeHtmlAttr($swatchSize) ?>px; height:<?= $block->escapeHtmlAttr($swatchSize) ?>px; display:block; border:2px solid #d1d5db; border-radius:8px; box-shadow:0 6px 16px rgba(15, 23, 42, 0.08); transition:border-color .2s ease, box-shadow .2s ease, transform .2s ease;"
-                              <?php endif; ?>></span>
-                        <span class="color-swatch-label"
-                              data-role="swatch-label"
-                              style="display:block; width:100%; text-align:center; font-size:12px; font-weight:600; line-height:1.3; color:#111827; word-break:break-word;"><?= $block->escapeHtml($swatch['label']) ?></span>
-                    </button>
+                    <?php if ($swatchType === 'size') : ?>
+                        <button type="button"
+                                class="size-swatch"
+                                data-value-id="<?= $block->escapeHtmlAttr($swatch['id']) ?>"
+                                data-label="<?= $block->escapeHtmlAttr($swatch['label']) ?>"
+                                title="<?= $block->escapeHtmlAttr($swatch['label']) ?>"
+                                aria-label="<?= $block->escapeHtmlAttr($swatch['label']) ?>"
+                                aria-pressed="false"
+                                style="display:inline-flex; align-items:center; justify-content:center; padding:10px 16px; border:2px solid #d1d5db; border-radius:8px; background-color:#fff; color:#374151; font-size:14px; font-weight:600; text-align:center; cursor:pointer; transition:border-color .2s ease, background-color .2s ease, color .2s ease;">
+                            <?= $block->escapeHtml($swatch['label']) ?>
+                        </button>
+                    <?php else : ?>
+                        <button type="button"
+                                class="color-swatch"
+                                data-value-id="<?= $block->escapeHtmlAttr($swatch['id']) ?>"
+                                data-label="<?= $block->escapeHtmlAttr($swatch['label']) ?>"
+                                title="<?= $block->escapeHtmlAttr($swatch['label']) ?>"
+                                aria-label="<?= $block->escapeHtmlAttr($swatch['label']) ?>"
+                                aria-pressed="false"
+                                style="display:inline-flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:8px; width:<?= $block->escapeHtmlAttr($swatchSize) ?>px; min-width:<?= $block->escapeHtmlAttr($swatchSize) ?>px; padding:0; margin:0; border:0; background:transparent; box-shadow:none; text-align:center;">
+                            <span class="color-swatch-box <?= $block->escapeHtmlAttr($swatch['css_class']) ?>"
+                                  data-role="swatch-box"
+                                  <?php if (!empty($swatch['style'])) : ?>
+                                      style="<?= $block->escapeHtmlAttr($swatch['style']) ?> width:<?= $block->escapeHtmlAttr($swatchSize) ?>px; height:<?= $block->escapeHtmlAttr($swatchSize) ?>px; display:block; border:2px solid #d1d5db; border-radius:8px; box-shadow:0 6px 16px rgba(15, 23, 42, 0.08); transition:border-color .2s ease, box-shadow .2s ease, transform .2s ease;"
+                                  <?php else : ?>
+                                      style="width:<?= $block->escapeHtmlAttr($swatchSize) ?>px; height:<?= $block->escapeHtmlAttr($swatchSize) ?>px; display:block; border:2px solid #d1d5db; border-radius:8px; box-shadow:0 6px 16px rgba(15, 23, 42, 0.08); transition:border-color .2s ease, box-shadow .2s ease, transform .2s ease;"
+                                  <?php endif; ?>></span>
+                            <span class="color-swatch-label"
+                                  data-role="swatch-label"
+                                  style="display:block; width:100%; text-align:center; font-size:12px; font-weight:600; line-height:1.3; color:#111827; word-break:break-word;"><?= $block->escapeHtml($swatch['label']) ?></span>
+                        </button>
+                    <?php endif; ?>
                 <?php endforeach; ?>
             </div>
             <script type="text/x-magento-init">
@@ -76,63 +94,6 @@ $selectId = 'select_' . $_option->getId();
                 if (!$container.length || !$select.length) {
                     return;
                 }
-
-                function setActiveState(valueId) {
-                    var activeSelector = '.color-swatch[data-value-id="' + valueId + '"]',
-                        $active = valueId ? $container.find(activeSelector) : $();
-
-                    $container.find('.color-swatch')
-                        .removeClass('active')
-                        .attr('aria-pressed', 'false');
-
-                    $container.find('[data-role="swatch-box"]').each(function () {
-                        $(this).css({
-                            borderColor: '#d1d5db',
-                            boxShadow: '0 6px 16px rgba(15, 23, 42, 0.08)',
-                            transform: 'translateY(0)'
-                        });
-                    });
-
-                    $container.find('[data-role="swatch-label"]').each(function () {
-                        $(this).css({
-                            color: '#111827',
-                            fontWeight: '600'
-                        });
-                    });
-
-                    if ($active.length) {
-                        $active.addClass('active').attr('aria-pressed', 'true');
-                        $active.find('[data-role="swatch-box"]').css({
-                            borderColor: '#60a5fa',
-                            boxShadow: '0 0 0 4px rgba(96, 165, 250, 0.35), 0 10px 22px rgba(15, 23, 42, 0.18)',
-                            transform: 'translateY(-1px)'
-                        });
-                        $active.find('[data-role="swatch-label"]').css({
-                            color: '#2563eb',
-                            fontWeight: '700'
-                        });
-                    }
-                }
-
-                $container.off('click.customOptionSwatches').on('click.customOptionSwatches', '.color-swatch', function (event) {
-                    var valueId = String($(this).data('valueId'));
-
-                    event.preventDefault();
-                    event.stopPropagation();
-
-                    setActiveState(valueId);
-                    $select.val(valueId);
-                    $select.find('option').prop('selected', false);
-                    $select.find('option[value="' + valueId + '"]').prop('selected', true);
-                    $select.trigger('change');
-                });
-
-                $select.off('change.customOptionSwatches').on('change.customOptionSwatches', function () {
-                    var selectedValue = $(this).val();
-                    setActiveState(selectedValue ? String(selectedValue) : '');
-                });
-
-                setActiveState($select.val() ? String($select.val()) : '');
 
                 // Mirror Magento validation error messages below the swatch container
                 (function () {
@@ -206,8 +167,8 @@ $selectId = 'select_' . $_option->getId();
             <?= /* @noEscape */ $block->getValuesHtml() ?>
         <?php endif; ?>
         <?php if ($isRequired && (
-            $_option->getType() == ProductCustomOptionInterface::OPTION_TYPE_RADIO ||
-            $_option->getType() == ProductCustomOptionInterface::OPTION_TYPE_CHECKBOX
+            $_option->getType() === ProductCustomOptionInterface::OPTION_TYPE_RADIO ||
+            $_option->getType() === ProductCustomOptionInterface::OPTION_TYPE_CHECKBOX
         )) : ?>
             <span id="options-<?= $block->escapeHtmlAttr($_option->getId()) ?>-container"></span>
         <?php endif; ?>

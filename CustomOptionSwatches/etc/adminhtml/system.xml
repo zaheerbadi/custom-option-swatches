@@ -79,6 +79,17 @@
                     <frontend_model>Bodylanguage\CustomOptionSwatches\Block\Adminhtml\System\Config\Form\Field\PatternMappings</frontend_model>
                     <backend_model>Bodylanguage\CustomOptionSwatches\Model\Config\Backend\PatternMappings</backend_model>
                 </field>
+                <field id="swatch_option_labels"
+                       translate="label comment"
+                       type="textarea"
+                       sortOrder="60"
+                       showInDefault="1"
+                       showInWebsite="1"
+                       showInStore="1">
+                    <label>Swatch Option Labels</label>
+                    <comment>Comma-separated list of custom option labels that should be rendered as swatches. Case-insensitive, trimmed. Default includes "Colors".</comment>
+                    <validate>validate-no-empty</validate>
+                </field>
             </group>
         </section>
     </system>
