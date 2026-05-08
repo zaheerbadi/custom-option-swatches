@@ -51,6 +51,45 @@ class PatternMappings extends AbstractFieldArray
     }
 
     /**
+     * Override to ensure row ids are valid HTML id selectors and unique across the page.
+     * Prefix ids with the element id to avoid conflicts between different field arrays.
+     *
+     * @return array
+     */
+    public function getArrayRows()
+    {
+        $rows = parent::getArrayRows();
+        $fixed = [];
+        $elementId = $this->getElement()->getId();
+
+        foreach ($rows as $rowId => $row) {
+            $currentId = (string) $row->getData('_id');
+            if ($currentId === '') {
+                $fixed[$rowId] = $row;
+                continue;
+            }
+
+            $newId = $elementId . '_' . $currentId;
+
+            $rowData = $row->getData();
+            $columnValues = $rowData['column_values'] ?? [];
+            $newColumnValues = [];
+
+            foreach ($columnValues as $key => $val) {
+                $newKey = preg_replace('/^' . preg_quote($currentId, '/') . '_/', $newId . '_', $key, 1);
+                $newColumnValues[$newKey] = $val;
+            }
+
+            $rowData['column_values'] = $newColumnValues;
+            $rowData['_id'] = $newId;
+
+            $fixed[$newId] = new \Magento\Framework\DataObject($rowData);
+        }
+
+        return $fixed;
+    }
+
+    /**
      * @return PatternOptions
      */
     private function getPatternRenderer()

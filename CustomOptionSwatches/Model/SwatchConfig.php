@@ -329,12 +329,12 @@ class SwatchConfig
             return $this->buildColorSwatch($this->getFallbackColor($storeId), $label, $normalized);
         }
 
-        if (isset($resolved['pattern_exact'][$normalized])) {
-            return $this->buildPatternSwatch($resolved['pattern_exact'][$normalized], $label, $normalized);
-        }
-
         if (isset($resolved['image_exact'][$normalized])) {
             return $this->buildImageSwatch($resolved['image_exact'][$normalized], $label, $normalized);
+        }
+
+        if (isset($resolved['pattern_exact'][$normalized])) {
+            return $this->buildPatternSwatch($resolved['pattern_exact'][$normalized], $label, $normalized);
         }
 
         if (isset($resolved['color_exact'][$normalized])) {
@@ -342,12 +342,12 @@ class SwatchConfig
         }
 
         foreach ($this->getCandidates($normalized) as $candidate) {
-            if (isset($resolved['pattern_exact'][$candidate])) {
-                return $this->buildPatternSwatch($resolved['pattern_exact'][$candidate], $label, $normalized);
-            }
-
             if (isset($resolved['image_exact'][$candidate])) {
                 return $this->buildImageSwatch($resolved['image_exact'][$candidate], $label, $normalized);
+            }
+
+            if (isset($resolved['pattern_exact'][$candidate])) {
+                return $this->buildPatternSwatch($resolved['pattern_exact'][$candidate], $label, $normalized);
             }
 
             if (isset($resolved['color_exact'][$candidate])) {
@@ -355,14 +355,14 @@ class SwatchConfig
             }
         }
 
-        $pattern = $this->matchByKeyword($normalized, $resolved['pattern_keywords']);
-        if ($pattern !== null) {
-            return $this->buildPatternSwatch($pattern, $label, $normalized);
-        }
-
         $image = $this->matchByKeyword($normalized, $resolved['image_keywords']);
         if ($image !== null) {
             return $this->buildImageSwatch($image, $label, $normalized);
+        }
+
+        $pattern = $this->matchByKeyword($normalized, $resolved['pattern_keywords']);
+        if ($pattern !== null) {
+            return $this->buildPatternSwatch($pattern, $label, $normalized);
         }
 
         $color = $this->matchByKeyword($normalized, $resolved['color_keywords']);
@@ -371,14 +371,14 @@ class SwatchConfig
         }
 
         foreach ($this->getCandidates($normalized) as $candidate) {
-            $pattern = $this->matchByKeyword($candidate, $resolved['pattern_keywords']);
-            if ($pattern !== null) {
-                return $this->buildPatternSwatch($pattern, $label, $normalized);
-            }
-
             $image = $this->matchByKeyword($candidate, $resolved['image_keywords']);
             if ($image !== null) {
                 return $this->buildImageSwatch($image, $label, $normalized);
+            }
+
+            $pattern = $this->matchByKeyword($candidate, $resolved['pattern_keywords']);
+            if ($pattern !== null) {
+                return $this->buildPatternSwatch($pattern, $label, $normalized);
             }
 
             $color = $this->matchByKeyword($candidate, $resolved['color_keywords']);

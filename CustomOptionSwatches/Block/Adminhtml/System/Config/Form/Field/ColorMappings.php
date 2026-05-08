@@ -35,9 +35,8 @@ class ColorMappings extends AbstractFieldArray
     }
 
     /**
-     * Override to ensure row ids are valid HTML id selectors (do not start with a digit).
-     * Prefix numeric or digit-leading ids with an underscore so template selectors like
-     * "tr#<%- _id %> button.action-delete" remain valid for querySelectorAll.
+     * Override to ensure row ids are valid HTML id selectors and unique across the page.
+     * Prefix ids with the element id to avoid conflicts between different field arrays.
      *
      * @return array
      */
@@ -45,6 +44,7 @@ class ColorMappings extends AbstractFieldArray
     {
         $rows = parent::getArrayRows();
         $fixed = [];
+        $elementId = $this->getElement()->getId();
 
         foreach ($rows as $rowId => $row) {
             $currentId = (string) $row->getData('_id');
@@ -53,26 +53,21 @@ class ColorMappings extends AbstractFieldArray
                 continue;
             }
 
-            // If id starts with a digit, prefix with underscore
-            if (preg_match('/^[0-9]/', $currentId)) {
-                $newId = '_' . $currentId;
+            $newId = $elementId . '_' . $currentId;
 
-                $rowData = $row->getData();
-                $columnValues = $rowData['column_values'] ?? [];
-                $newColumnValues = [];
+            $rowData = $row->getData();
+            $columnValues = $rowData['column_values'] ?? [];
+            $newColumnValues = [];
 
-                foreach ($columnValues as $key => $val) {
-                    $newKey = preg_replace('/^' . preg_quote($currentId, '/') . '_/', $newId . '_', $key, 1);
-                    $newColumnValues[$newKey] = $val;
-                }
-
-                $rowData['column_values'] = $newColumnValues;
-                $rowData['_id'] = $newId;
-
-                $fixed[$newId] = new \Magento\Framework\DataObject($rowData);
-            } else {
-                $fixed[$currentId] = $row;
+            foreach ($columnValues as $key => $val) {
+                $newKey = preg_replace('/^' . preg_quote($currentId, '/') . '_/', $newId . '_', $key, 1);
+                $newColumnValues[$newKey] = $val;
             }
+
+            $rowData['column_values'] = $newColumnValues;
+            $rowData['_id'] = $newId;
+
+            $fixed[$newId] = new \Magento\Framework\DataObject($rowData);
         }
 
         return $fixed;
